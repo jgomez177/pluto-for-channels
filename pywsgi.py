@@ -18,13 +18,12 @@ else:
     except:
         port = 7777
 
-pluto_ads = os.environ.get("PLUTO_ADS")
 
 pluto_country_list = os.environ.get("PLUTO_CODE")
 if pluto_country_list:
    pluto_country_list = pluto_country_list.split(',')
 else:
-   pluto_country_list = ['local']
+   pluto_country_list = ['local', 'us_east', 'us_west', 'ca', 'uk']
 
 ALLOWED_COUNTRY_CODES = ['local', 'us_east', 'us_west', 'ca', 'uk']
 # instance of flask application
@@ -208,9 +207,10 @@ def playlist_maddox_compatible(provider, country_code):
 
 @app.route("/<provider>/<country_code>/watch/<id>")
 def watch(provider, country_code, id):
-    resp = providers[provider].resp_data(country_code)
+    resp, error= providers[provider].resp_data(country_code)
+    if error: return error, 500
     # print(json.dumps(resp, indent=2))
-    token = resp.get('token','')
+    token = resp.get('sessionToken','')
     stitcher = resp.get("servers", {}).get("stitcher", '')
     stitcherParams = resp.get("stitcherParams",'')
     video_url = f'{stitcher}/v2/stitch/hls/channel/{id}/master.m3u8?{stitcherParams}&jwt={token}&masterJWTPassthrough=true&includeExtendedEvents=true'
