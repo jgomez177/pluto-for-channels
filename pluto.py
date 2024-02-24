@@ -173,7 +173,8 @@ class Client:
         id_values = [d['id'] for d in station_list]
         group_size = 100
         grouped_id_values = [id_values[i:i + group_size] for i in range(0, len(id_values), group_size)]
-        country_data = self.epg_data.get(country_code, [])
+        # country_data = self.epg_data.get(country_code, [])
+        country_data = []
 
         for i in range(3):
             print(f'Retrieving {country_code} EPG data for {start_time}')
