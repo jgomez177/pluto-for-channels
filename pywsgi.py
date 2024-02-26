@@ -51,10 +51,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.06</span>\
+                <span class="tag">v1.07</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Feb 24, 2024\
+                Last Updated: Feb 26, 2024\
               '
 
 @app.route("/")
@@ -128,7 +128,7 @@ def playlist(provider, country_code):
     for s in stations:
         url = f"http://{host}/{provider}/{country_code}/watch/{s.get('watchId') or s.get('id')}\n\n"
 
-        m3u += f"#EXTINF:-1 channel-id=\"{provider}-{s.get('id')}\""
+        m3u += f"#EXTINF:-1 channel-id=\"{provider}-{s.get('slug')}\""
         m3u += f" tvg-id=\"{s.get('id')}\""
         m3u += f" tvg-chno=\"{''.join(map(str, str(s.get('number', []))))}\"" if s.get('number') else ""
         m3u += f" group-title=\"{''.join(map(str, s.get('group', [])))}\"" if s.get('group') else ""
