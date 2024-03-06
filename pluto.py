@@ -318,7 +318,7 @@ class Client:
                     episode_num_pluto = ET.SubElement(programme, "episode-num", attrib={"system": "pluto"})
                     episode_num_pluto.text = timeline["episode"]["_id"]
                 episode_num_air_date = ET.SubElement(programme, "episode-num", attrib={"system": "original-air-date"})
-                episode_num_air_date.text = datetime.strptime(timeline["episode"]["clip"]["originalReleaseDate"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=pytz.utc).strftime("%Y%m%d%H%M%S %z")
+                episode_num_air_date.text = datetime.strptime(timeline["episode"]["clip"]["originalReleaseDate"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=pytz.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + 'Z'
                 desc = ET.SubElement(programme, "desc")
                 desc.text = (timeline["episode"]["description"]).replace('&quot;', '"')
                 icon_programme = ET.SubElement(programme, "icon", attrib={"src": timeline["episode"]["series"]["tile"]["path"]})
