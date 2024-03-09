@@ -18,7 +18,6 @@ else:
     except:
         port = 7777
 
-
 pluto_country_list = os.environ.get("PLUTO_CODE")
 if pluto_country_list:
    pluto_country_list = pluto_country_list.split(',')
@@ -51,10 +50,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.08</span>\
+                <span class="tag">v1.08a</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Mar 6, 2024\
+                Last Updated: Mar 9, 2024\
               '
 
 @app.route("/")
@@ -214,6 +213,7 @@ def watch(provider, country_code, id):
     stitcher = resp.get("servers", {}).get("stitcher", '')
     stitcherParams = resp.get("stitcherParams",'')
     video_url = f'{stitcher}/v2/stitch/hls/channel/{id}/master.m3u8?{stitcherParams}&jwt={token}&masterJWTPassthrough=true&includeExtendedEvents=true'
+    print(video_url)
 
     return (redirect(video_url))
 
