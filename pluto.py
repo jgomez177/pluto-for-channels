@@ -129,6 +129,7 @@ class Client:
                     'name': elem.get('name'),
                     'slug': elem.get('slug'),
                     'tmsid': elem.get('tmsid'),
+                    'summary': elem.get('summary'),
                     'group': categories_list.get(elem.get('id'))}
             
             # Ensure number value is unique

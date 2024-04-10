@@ -1,13 +1,15 @@
 # Pluo for Channels (Python)
 
-Current version: **1.09**
+Current version: **1.10**
 
 # About
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
 
 # Changes
+ - Version 1.10: 
+    - Added tvc-guide-description to playlist
  - Version 1.09: 
-    - Added group-title to m3u
+    - Added group-title to playlist
 
 # Running
 The recommended way of running is to pull the image from [GitHub](https://github.com/jgomez177/pluto-for-channels/pkgs/container/pluto-for-channels).

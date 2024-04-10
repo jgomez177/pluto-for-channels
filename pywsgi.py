@@ -50,7 +50,7 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.09</span>\
+                <span class="tag">v1.10</span>\
               </h1>\
               <p class="subtitle">\
                 Last Updated: Apr 10, 2024\
@@ -133,6 +133,8 @@ def playlist(provider, country_code):
         m3u += f" group-title=\"{''.join(map(str, s.get('group', [])))}\"" if s.get('group') else ""
         m3u += f" tvg-logo=\"{''.join(map(str, s.get('logo', [])))}\"" if s.get('logo') else ""
         m3u += f" tvg-name=\"{''.join(map(str, s.get('tmsid', [])))}\"" if s.get('tmsid') else ""
+        m3u += f" tvc-guide-title=\"{''.join(map(str, s.get('name', [])))}\"" if s.get('name') else ""
+        m3u += f" tvc-guide-description=\"{''.join(map(str, s.get('summary', [])))}\"" if s.get('summary') else ""
         m3u += f" tvg-shift=\"{''.join(map(str, s.get('timeShift', [])))}\"" if s.get('timeShift') else ""
         m3u += f",{s.get('name') or s.get('call_sign')}\n"
         m3u += f"{url}\n\n"
