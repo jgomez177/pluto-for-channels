@@ -108,12 +108,28 @@ class Client:
         
         channel_list = response.json().get("data")
 
+        category_url = f"https://service-channels.clusters.pluto.tv/v2/guide/categories"
+
+        response = self.session.get(category_url, params=params, headers=headers)
+        if response.status_code != 200:
+            return None, f"HTTP failure {response.status_code}: {response.text}"
+        
+        categories_data = response.json().get("data")
+
+        categories_list = {}
+        for elem in categories_data:
+            category = elem.get('name')
+            channelIDs = elem.get('channelIDs')
+            for channel in channelIDs:
+                categories_list.update({channel: category})
+
         stations = []
         for elem in channel_list:
             entry = {'id': elem.get('id'),
                     'name': elem.get('name'),
                     'slug': elem.get('slug'),
-                    'tmsid': elem.get('tmsid')}
+                    'tmsid': elem.get('tmsid'),
+                    'group': categories_list.get(elem.get('id'))}
             
             # Ensure number value is unique
             number = elem.get('number')
