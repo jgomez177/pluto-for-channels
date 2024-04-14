@@ -1,6 +1,6 @@
 # Pluo for Channels (Python)
 
-Current version: **1.10a**
+Current version: **1.10b**
 
 # About
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
