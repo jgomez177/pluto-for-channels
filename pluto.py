@@ -1,4 +1,4 @@
-import secrets, requests, json, pytz, gzip
+import secrets, requests, json, pytz, gzip, re
 from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 
@@ -151,6 +151,16 @@ class Client:
     #########################################################################################
     # EPG Guide Data
     #########################################################################################
+    def strip_illegal_characters(self, xml_string):
+        # Define a regular expression pattern to match illegal characters
+        illegal_char_pattern = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
+
+        # Replace illegal characters with an empty string
+        clean_xml_string = illegal_char_pattern.sub('', xml_string)
+
+        return clean_xml_string
+
+
     def update_epg(self, country_code):
         resp, error = self.resp_data(country_code)
         if error: return None, error
@@ -326,7 +336,7 @@ class Client:
                                                                  "stop": datetime.strptime(timeline["stop"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=pytz.utc).strftime("%Y%m%d%H%M%S %z")})
                 # Add sub-elements to programme
                 title = ET.SubElement(programme, "title")
-                title.text = timeline["title"]
+                title.text = self.strip_illegal_characters(timeline["title"])
                 if timeline["episode"].get("series", {}).get("type", "") == "live":
                     live = ET.SubElement(programme, "live")
                 elif timeline["episode"].get("series", {}).get("type", "") == "tv":
@@ -337,7 +347,7 @@ class Client:
                 episode_num_air_date = ET.SubElement(programme, "episode-num", attrib={"system": "original-air-date"})
                 episode_num_air_date.text = datetime.strptime(timeline["episode"]["clip"]["originalReleaseDate"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=pytz.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + 'Z'
                 desc = ET.SubElement(programme, "desc")
-                desc.text = (timeline["episode"]["description"]).replace('&quot;', '"')
+                desc.text = self.strip_illegal_characters(timeline["episode"]["description"]).replace('&quot;', '"')
                 icon_programme = ET.SubElement(programme, "icon", attrib={"src": timeline["episode"]["series"]["tile"]["path"]})
                 date = ET.SubElement(programme, "date")
                 date.text = datetime.strptime(timeline["episode"]["clip"]["originalReleaseDate"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y%m%d")
@@ -346,7 +356,7 @@ class Client:
                 series_id_pluto.text = timeline["episode"]["series"]["_id"]
                 if timeline["title"].lower() != timeline["episode"]["name"].lower():
                     sub_title = ET.SubElement(programme, "sub-title")
-                    sub_title.text = timeline["episode"]["name"]
+                    sub_title.text = self.strip_illegal_characters(timeline["episode"]["name"])
                 categories = []
                 if timeline["episode"].get("genre", None) is not None:
                     genre = timeline["episode"]["genre"]
@@ -388,7 +398,7 @@ class Client:
         for station in station_list:
             channel = ET.SubElement(root, "channel", attrib={"id": station["id"]})
             display_name = ET.SubElement(channel, "display-name")
-            display_name.text = station["name"]
+            display_name.text = self.strip_illegal_characters(station["name"])
             icon = ET.SubElement(channel, "icon", attrib={"src": station["logo"]})
 
         # Create Programme Elements

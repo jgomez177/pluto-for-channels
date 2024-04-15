@@ -1,11 +1,14 @@
 # Pluo for Channels (Python)
 
-Current version: **1.10b**
+Current version: **1.10**
 
 # About
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
 
 # Changes
+ - Version 1.11: 
+    - Modified options for playlist to include a compatibility URL parameter.
+    - Illegal character XML handling has been added.
  - Version 1.10: 
     - Added tvc-guide-description to playlist
  - Version 1.09: 
@@ -28,6 +31,11 @@ You can retrieve the playlist and EPG via the status page.
 |---|---|---|
 | PLUTO_PORT | Port the API will be served on. You can set this if it conflicts with another service in your environment. | 7777 |
 | PLUTO_CODE | What country streams will be hosted. <br>Multiple can be hosted using comma separation<p><p>ALLOWED_COUNTRY_CODES:<br>**us_east** - United States East Coast,<br>**us_west** - United States West Coast,<br>**local** - Local IP address Geolocation,<br>**ca** - Canada,<br>**uk** - United Kingdom,  | local,us_west,us_east,ca,uk |
+
+## Additional URL Parameters
+| Parameter | Description |
+|---|---|
+| channel_id_format | default channel-id is set as \"pluto-{slug}\".<br>**"id"** will change channel-id to \"pluto-{id}\".<br>**"slug_only"** will change channel-id to \"{slug}". |
 
 
 ***

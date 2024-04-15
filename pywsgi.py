@@ -50,10 +50,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.10</span>\
+                <span class="tag">v1.11</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Apr 10, 2024\
+                Last Updated: Apr 15, 2024\
               '
 
 @app.route("/")
@@ -63,11 +63,11 @@ def index():
     if all(item in ALLOWED_COUNTRY_CODES for item in pluto_country_list):
         for code in pluto_country_list:
             pl = f"http://{host}/{provider}/{code}/playlist.m3u"
-            ul += f"<li>{provider.upper()} {code.upper()}: <a href='{pl}'>{pl}</a></li>\n"
-            pl = f"http://{host}/mjh_compatible/{provider}/{code}/playlist.m3u"
-            ul += f"<li>{provider.upper()} {code.upper()} channel-id by \"provider\"-\"id\" (i.mjh.nz compatibility): <a href='{pl}'>{pl}</a></li>\n"
-            pl = f"http://{host}/maddox_compatible/{provider}/{code}/playlist.m3u"
-            ul += f"<li>{provider.upper()} {code.upper()} channel-id by \"slug\" (maddox compatibility): <a href='{pl}'>{pl}</a></li>\n"
+            ul += f"<li>{provider.upper()} {code.upper()} channel_id_format = \"{provider}-{{slug}}\" (default format): <a href='{pl}'>{pl}</a></li>\n"
+            pl = f"http://{host}/{provider}/{code}/playlist.m3u?channel_id_format=id"
+            ul += f"<li>{provider.upper()} {code.upper()} channel_id_format = \"{provider}-{{id}}\" (i.mjh.nz compatibility): <a href='{pl}'>{pl}</a></li>\n"
+            pl = f"http://{host}/{provider}/{code}/playlist.m3u?channel_id_format=slug_only"
+            ul += f"<li>{provider.upper()} {code.upper()} channel_id_format = \"{{slug}}\" (maddox compatibility): <a href='{pl}'>{pl}</a></li>\n"
             ul += f"<br>\n"
             pl = f"http://{host}/{provider}/epg/{code}/epg-{code}.xml"
             ul += f"<li>{provider.upper()} {code.upper()} EPG: <a href='{pl}'>{pl}</a></li>\n"
@@ -107,11 +107,13 @@ def epg_json(country_code):
 
 @app.get("/<provider>/<country_code>/playlist.m3u")
 def playlist(provider, country_code):
-
     if country_code not in ALLOWED_COUNTRY_CODES:
         return "Invalid county code", 400
 
     host = request.host
+
+    channel_id_format = request.args.get('channel_id_format','').lower()
+
 
     stations, err = providers[provider].channels(country_code)
     resp = providers[provider].resp_data(country_code)
@@ -127,7 +129,12 @@ def playlist(provider, country_code):
     for s in stations:
         url = f"http://{host}/{provider}/{country_code}/watch/{s.get('watchId') or s.get('id')}\n\n"
 
-        m3u += f"#EXTINF:-1 channel-id=\"{provider}-{s.get('slug')}\""
+        if channel_id_format == 'id':
+            m3u += f"#EXTINF:-1 channel-id=\"{provider}-{s.get('id')}\""
+        elif channel_id_format == 'slug_only':
+            m3u += f"#EXTINF:-1 channel-id=\"{s.get('slug')}\""
+        else:
+            m3u += f"#EXTINF:-1 channel-id=\"{provider}-{s.get('slug')}\""
         m3u += f" tvg-id=\"{s.get('id')}\""
         m3u += f" tvg-chno=\"{''.join(map(str, str(s.get('number', []))))}\"" if s.get('number') else ""
         m3u += f" group-title=\"{''.join(map(str, s.get('group', [])))}\"" if s.get('group') else ""
@@ -144,69 +151,13 @@ def playlist(provider, country_code):
 
 @app.get("/mjh_compatible/<provider>/<country_code>/playlist.m3u")
 def playlist_mjh_compatible(provider, country_code):
-
-    if country_code not in ALLOWED_COUNTRY_CODES:
-        return "Invalid county code", 400
-
     host = request.host
-
-    stations, err = providers[provider].channels(country_code)
-
-    if err is not None:
-        return err, 500
-    
-    stations = sorted(stations, key = lambda i: i.get('number', 0))
-
-    m3u = "#EXTM3U\r\n\r\n"
-    for s in stations:
-        url = f"http://{host}/{provider}/{country_code}/watch/{s.get('watchId') or s.get('id')}\n\n"
-
-        m3u += f"#EXTINF:-1 channel-id=\"{provider}-{s.get('id')}\""
-        m3u += f" tvg-id=\"{s.get('id')}\""
-        m3u += f" tvg-chno=\"{''.join(map(str, str(s.get('number', []))))}\"" if s.get('number') else ""
-        m3u += f" group-title=\"{''.join(map(str, s.get('group', [])))}\"" if s.get('group') else ""
-        m3u += f" tvg-logo=\"{''.join(map(str, s.get('logo', [])))}\"" if s.get('logo') else ""
-        m3u += f" tvg-name=\"{''.join(map(str, s.get('tmsid', [])))}\"" if s.get('tmsid') else ""
-        m3u += f" tvc-guide-description=\"{''.join(map(str, s.get('summary', [])))}\"" if s.get('summary') else ""
-        m3u += f" tvg-shift=\"{''.join(map(str, s.get('timeShift', [])))}\"" if s.get('timeShift') else ""
-        m3u += f",{s.get('name') or s.get('call_sign')}\n"
-        m3u += f"{url}\n\n"
-
-    response = Response(m3u, content_type='audio/x-mpegurl')
-    return (response)
+    return (redirect(f"http://{host}/{provider}/{country_code}/playlist.m3u?compatibility=id"))
 
 @app.get("/maddox_compatible/<provider>/<country_code>/playlist.m3u")
 def playlist_maddox_compatible(provider, country_code):
-
-    if country_code not in ALLOWED_COUNTRY_CODES:
-        return "Invalid county code", 400
-
     host = request.host
-
-    stations, err = providers[provider].channels(country_code)
-
-    if err is not None:
-        return err, 500
-    
-    stations = sorted(stations, key = lambda i: i.get('number', 0))
-
-    m3u = "#EXTM3U\r\n\r\n"
-    for s in stations:
-        url = f"http://{host}/{provider}/{country_code}/watch/{s.get('watchId') or s.get('id')}\n\n"
-
-        m3u += f"#EXTINF:-1 channel-id=\"{s.get('slug')}\""
-        m3u += f" tvg-id=\"{s.get('id')}\""
-        m3u += f" tvg-chno=\"{''.join(map(str, str(s.get('number', []))))}\"" if s.get('number') else ""
-        m3u += f" group-title=\"{''.join(map(str, s.get('group', [])))}\"" if s.get('group') else ""
-        m3u += f" tvg-logo=\"{''.join(map(str, s.get('logo', [])))}\"" if s.get('logo') else ""
-        # m3u += f" tvg-name=\"{''.join(map(str, s.get('tmsid', [])))}\"" if s.get('tmsid') else ""
-        m3u += f" tvc-guide-description=\"{''.join(map(str, s.get('summary', [])))}\"" if s.get('summary') else ""
-        # m3u += f" tvg-shift=\"{''.join(map(str, s.get('timeShift', [])))}\"" if s.get('timeShift') else ""
-        m3u += f",{s.get('name') or s.get('call_sign')}\n"
-        m3u += f"{url}\n\n"
-
-    response = Response(m3u, content_type='audio/x-mpegurl')
-    return (response)
+    return (redirect(f"http://{host}/{provider}/{country_code}/playlist.m3u?compatibility=slug_only"))
 
 @app.route("/<provider>/<country_code>/watch/<id>")
 def watch(provider, country_code, id):
