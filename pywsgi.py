@@ -23,7 +23,6 @@ if pluto_country_list:
    pluto_country_list = pluto_country_list.split(',')
 else:
    pluto_country_list = ['local', 'us_east', 'us_west', 'ca', 'uk']
-   pluto_country_list = ['local', 'ca']
 
 ALLOWED_COUNTRY_CODES = ['local', 'us_east', 'us_west', 'ca', 'uk']
 # instance of flask application
