@@ -1,4 +1,4 @@
-import secrets, requests, json, pytz, gzip, re
+import uuid, requests, json, pytz, gzip, re
 from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 
@@ -18,13 +18,8 @@ class Client:
                           "us_west": {"X-Forwarded-For":"76.81.9.69"},}
 
     def load_device(self):
-        try:
-            with open("pluto-device.json", "r") as f:
-                self.device = json.load(f)
-        except FileNotFoundError:
-            self.device = secrets.token_hex(12)
-            with open("pluto-device.json", "w") as f:
-                json.dump(self.device, f)
+        if self.device is None:
+            self.device = uuid.uuid1()
         return(self.device)
 
     def resp_data(self, country_code):
@@ -39,20 +34,33 @@ class Client:
             'accept-language': 'en-US,en;q=0.9',
             'origin': 'https://pluto.tv',
             'referer': 'https://pluto.tv/',
+            'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Linux"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-site',
+            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             }
 
         boot_params = {
             'appName': 'web',
-            'appVersion': '7.9.0-a9cca6b89aea4dc0998b92a51989d2adb9a9025d',
-            'deviceVersion': '120.0.0',
+            'appVersion': '8.0.0-111b2b9dc00bd0bea9030b30662159ed9e7c8bc6',
+            'deviceVersion': '122.0.0',
             'deviceModel': 'web',
             'deviceMake': 'chrome',
             'deviceType': 'web',
-            'clientID': self.device,
+            'clientID': 'c63f9fbf-47f5-40dc-941c-5628558aec87',
             'clientModelNumber': '1.0.0',
+            'serverSideAds': 'false',
             'drmCapabilities': 'widevine:L3',
+            'blockingMode': '',
+            'notificationVersion': '1',
+            'appLaunchCount': '',
+            'lastAppLaunchDate': '',
+            # 'clientTime': '2024-04-18T19:05:52.323Z',
             }
-
+        
         if country_code in self.x_forward.keys():
             boot_headers.update(self.x_forward.get(country_code))
 

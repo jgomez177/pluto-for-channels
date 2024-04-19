@@ -1,11 +1,13 @@
 # Pluo for Channels (Python)
 
-Current version: **1.10**
+Current version: **1.12**
 
 # About
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
 
 # Changes
+ - Version 1.12:
+    - Changed HLS Stitcher to version 1 until “Playlist had no segments” issues can be resolved in version 2
  - Version 1.11: 
     - Modified options for playlist to include a compatibility URL parameter.
     - Illegal character XML handling has been added.

@@ -1,8 +1,8 @@
 from gevent.pywsgi import WSGIServer
 from flask import Flask, redirect, request, Response, send_file
 from threading import Thread
-import subprocess, os, sys, importlib, schedule, time, json
-from urllib.parse import urlencode
+import os, sys, importlib, schedule, time, re, uuid
+from urllib.parse import urlparse, urlencode, urlunparse, parse_qs
 from datetime import datetime, timedelta
 
 # import flask module
@@ -23,6 +23,7 @@ if pluto_country_list:
    pluto_country_list = pluto_country_list.split(',')
 else:
    pluto_country_list = ['local', 'us_east', 'us_west', 'ca', 'uk']
+   pluto_country_list = ['local', 'ca']
 
 ALLOWED_COUNTRY_CODES = ['local', 'us_east', 'us_west', 'ca', 'uk']
 # instance of flask application
@@ -92,18 +93,24 @@ def resp(country_code):
     # token = resp.get('sessionToken', None)
     return(resp)
 
-@app.route("/<country_code>/channels")
-def channels(country_code):
+@app.route("/<provider>/<country_code>/channels")
+def channels(provider, country_code):
     # host = request.host
     channels, error = providers[provider].channels(country_code)
     if error: return f"ERROR: {error}", 400
     return(channels)
 
-@app.get("/<country_code>/epg.json")
-def epg_json(country_code):
+@app.get("/<provider>/<country_code>/epg.json")
+def epg_json(provider, country_code):
         epg, err = providers[provider].epg_json(country_code)
         if err: return err
         return epg
+
+@app.get("/<provider>/<country_code>/stitcher.json")
+def stitch_json(provider, country_code):
+    resp, error= providers[provider].resp_data(country_code)
+    if error: return error, 500
+    return resp
 
 @app.get("/<provider>/<country_code>/playlist.m3u")
 def playlist(provider, country_code):
@@ -161,16 +168,62 @@ def playlist_maddox_compatible(provider, country_code):
 
 @app.route("/<provider>/<country_code>/watch/<id>")
 def watch(provider, country_code, id):
-    resp, error= providers[provider].resp_data(country_code)
-    if error: return error, 500
-    # print(json.dumps(resp, indent=2))
-    token = resp.get('sessionToken','')
-    stitcher = resp.get("servers", {}).get("stitcher", '')
-    stitcherParams = resp.get("stitcherParams",'')
-    video_url = f'{stitcher}/v2/stitch/hls/channel/{id}/master.m3u8?{stitcherParams}&jwt={token}&masterJWTPassthrough=true&includeExtendedEvents=true'
-    print(video_url)
+    client_id = providers[provider].load_device()
+    sid = uuid.uuid4()
+    stitcher = "https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv"
+    base_path = f"/stitch/hls/channel/{id}/master.m3u8"
 
+    jwt_required_list = ['625f054c5dfea70007244612', '625f04253e5f6c000708f3b7']
+    
+
+    params = {'advertisingId': '',
+              'appName': 'web',
+              'appVersion': 'unknown',
+              'appStoreUrl': '',
+              'architecture': '',
+              'buildVersion': '',
+              'clientTime': '0',
+              'deviceDNT': '0',
+              'deviceId': client_id,
+              'deviceMake': 'Chrome',
+              'deviceModel': 'web',
+              'deviceType': 'web',
+              'deviceVersion': 'unknown',
+              'includeExtendedEvents': 'false',
+              'sid': sid,
+              'userId': '',
+              'serverSideAds': 'true'
+    }
+
+    if id in jwt_required_list:
+        resp, error= providers[provider].resp_data(country_code)
+        if error: return error, 500
+        # print(json.dumps(resp, indent=2))
+        token = resp.get('sessionToken','')
+        stitcherParams = resp.get("stitcherParams",'')
+        video_url = f'{stitcher}/v2{base_path}?{stitcherParams}&jwt={token}&masterJWTPassthrough=true&includeExtendedEvents=true'
+    else:
+        parsed_url = urlparse(f"{stitcher}{base_path}")
+        base_query_params = parse_qs(parsed_url.query)
+        # Update base query parameters with the provided parameters
+        for key, value in params.items():
+            if key in base_query_params:
+                # Extend the existing values with new values if the parameter already exists
+                base_query_params[key].extend(value)
+            else:
+                # Add new parameter and its values
+                base_query_params[key] = value
+
+        # Construct updated query string
+        updated_query = urlencode(base_query_params, doseq=True)
+
+        # Generate the final URL
+        video_url = urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path,
+                               parsed_url.params, updated_query, parsed_url.fragment))
+
+    # print(video_url)
     return (redirect(video_url))
+
 
 @app.get("/<provider>/epg/<country_code>/<filename>")
 def epg_xml(provider, country_code, filename):
