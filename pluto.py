@@ -13,7 +13,7 @@ class Client:
 
         self.x_forward = {"local": {"X-Forwarded-For":""},
                           "uk": {"X-Forwarded-For":"178.238.11.6"},
-                          "ca": {"X-Forwarded-For":"192.206.151.131"}, 
+                          "ca": {"X-Forwarded-For":"192.206.151.131"},
                           "us_east": {"X-Forwarded-For":"108.82.206.181"},
                           "us_west": {"X-Forwarded-For":"76.81.9.69"},}
 
@@ -27,7 +27,7 @@ class Client:
         current_date = datetime.now(desired_timezone)
         if (self.response_list.get(country_code) is not None) and (current_date - self.sessionAt.get(country_code, datetime.now())) < timedelta(hours=4):
             return self.response_list[country_code], None
-        
+
         boot_headers = {
             'authority': 'boot.pluto.tv',
             'accept': '*/*',
@@ -60,7 +60,7 @@ class Client:
             'lastAppLaunchDate': '',
             # 'clientTime': '2024-04-18T19:05:52.323Z',
             }
-        
+
         if country_code in self.x_forward.keys():
             boot_headers.update(self.x_forward.get(country_code))
 
@@ -76,7 +76,7 @@ class Client:
             return None, f"HTTP failure {response.status_code}: {response.text}"
 
         # Save entire Response:
-        self.response_list.update({country_code: resp}) 
+        self.response_list.update({country_code: resp})
         self.sessionAt.update({country_code: current_date})
         print(f"New token for {country_code} generated at {(self.sessionAt.get(country_code)).strftime('%Y-%m-%d %H:%M.%S %z')}")
 
@@ -113,7 +113,7 @@ class Client:
         response = self.session.get(url, params=params, headers=headers)
         if response.status_code != 200:
             return None, f"HTTP failure {response.status_code}: {response.text}"
-        
+
         channel_list = response.json().get("data")
 
         category_url = f"https://service-channels.clusters.pluto.tv/v2/guide/categories"
@@ -121,7 +121,7 @@ class Client:
         response = self.session.get(category_url, params=params, headers=headers)
         if response.status_code != 200:
             return None, f"HTTP failure {response.status_code}: {response.text}"
-        
+
         categories_data = response.json().get("data")
 
         categories_list = {}
@@ -139,7 +139,7 @@ class Client:
                     'tmsid': elem.get('tmsid'),
                     'summary': elem.get('summary'),
                     'group': categories_list.get(elem.get('id'))}
-            
+
             # Ensure number value is unique
             number = elem.get('number')
             existing_numbers = {channel["number"] for channel in stations}
@@ -212,11 +212,11 @@ class Client:
         country_data = []
 
         for i in range(3):
-            print(f'Retrieving {country_code} EPG data for {start_time}')
             if end_time != start_time:
                 start_time = end_time
                 epg_params.update({'start': start_time})
-    
+            print(f'Retrieving {country_code} EPG data for {start_time}')
+
             for group in grouped_id_values:
                 epg_params.update({"channelIds": ','.join(map(str, group))})
                 response = self.session.get(url, params=epg_params, headers=epg_headers)
@@ -234,7 +234,7 @@ class Client:
     def epg_json(self, country_code):
         error_code = self.update_epg(country_code)
         if error_code:
-            print("error") 
+            print("error")
             return None, error_code
         return self.epg_data, None
 
@@ -379,7 +379,7 @@ class Client:
                     result = self.find_tuples_by_value(seriesGenres, subGenre)
                     categories.extend(result)
                 # categories = sorted(categories)
-                    
+
                 unique_list = []
                 for item in categories:
                     if item not in unique_list:
@@ -429,15 +429,13 @@ class Client:
         with open(xml_file_path, "w", encoding='utf-8') as f:
             f.write(output_content)
 
-        with open(xml_file_path, 'r') as file:
-            xml_data = file.read()
-
         # Compress the XML file
         with open(xml_file_path, 'rb') as file:
             with gzip.open(compressed_file_path, 'wb') as compressed_file:
                 compressed_file.writelines(file)
 
+        # Clear the EPG data for this country
+        if country_code in self.epg_data:
+            del self.epg_data[country_code]
+
         return None
-        
-
-
