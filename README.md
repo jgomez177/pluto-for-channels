@@ -1,11 +1,24 @@
 # Pluo for Channels (Python)
 
-Current version: **1.12a**
+Current version: **1.13**
 
 # About
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
 
 # Changes
+ - Version 1.13:
+    - Merged optimizations offered up by **stewartcampbell** (Appreciate the support)
+        - Remove EPG data when no longer required
+        - Move EPG data retrieval logging line so that the correct start time is shown 
+        - Remove a redundant XML file read
+        - Use Alpine Python image
+        - Use pip instead of pip3 (alias exists in image)
+        - Add --no-cache-dir flag to pip install
+        - Add --disable-pip-version-check flag to pip install
+        - Add --no-compile flag to pip install
+        - Remove redundant $PATH code
+        - Reorder commands for optimal layer caching
+    - Added support for France
  - Version 1.12:
     - Changed HLS Stitcher to version 1 until “Playlist had no segments” issues can be resolved in version 2
  - Version 1.11: 
@@ -32,7 +45,7 @@ You can retrieve the playlist and EPG via the status page.
 | Environment Variable | Description | Default |
 |---|---|---|
 | PLUTO_PORT | Port the API will be served on. You can set this if it conflicts with another service in your environment. | 7777 |
-| PLUTO_CODE | What country streams will be hosted. <br>Multiple can be hosted using comma separation<p><p>ALLOWED_COUNTRY_CODES:<br>**us_east** - United States East Coast,<br>**us_west** - United States West Coast,<br>**local** - Local IP address Geolocation,<br>**ca** - Canada,<br>**uk** - United Kingdom,  | local,us_west,us_east,ca,uk |
+| PLUTO_CODE | What country streams will be hosted. <br>Multiple can be hosted using comma separation<p><p>ALLOWED_COUNTRY_CODES:<br>**us_east** - United States East Coast,<br>**us_west** - United States West Coast,<br>**local** - Local IP address Geolocation,<br>**ca** - Canada,<br>**uk** - United Kingdom, <br>**fr** - France, | local,us_west,us_east,ca,uk |
 
 ## Additional URL Parameters
 | Parameter | Description |

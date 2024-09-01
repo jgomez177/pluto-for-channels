@@ -22,9 +22,9 @@ pluto_country_list = os.environ.get("PLUTO_CODE")
 if pluto_country_list:
    pluto_country_list = pluto_country_list.split(',')
 else:
-   pluto_country_list = ['local', 'us_east', 'us_west', 'ca', 'uk']
+   pluto_country_list = ['local', 'us_east', 'us_west', 'ca', 'uk', 'fr']
 
-ALLOWED_COUNTRY_CODES = ['local', 'us_east', 'us_west', 'ca', 'uk']
+ALLOWED_COUNTRY_CODES = ['local', 'us_east', 'us_west', 'ca', 'uk', 'fr']
 # instance of flask application
 app = Flask(__name__)
 provider = "pluto"
@@ -50,10 +50,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.11</span>\
+                <span class="tag">v1.13</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Apr 15, 2024\
+                Last Updated: Sep 1, 2024\
               '
 
 @app.route("/")

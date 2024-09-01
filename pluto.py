@@ -14,6 +14,7 @@ class Client:
         self.x_forward = {"local": {"X-Forwarded-For":""},
                           "uk": {"X-Forwarded-For":"178.238.11.6"},
                           "ca": {"X-Forwarded-For":"192.206.151.131"},
+                          "fr": {"X-Forwarded-For":"193.169.64.141"},
                           "us_east": {"X-Forwarded-For":"108.82.206.181"},
                           "us_west": {"X-Forwarded-For":"76.81.9.69"},}
 
