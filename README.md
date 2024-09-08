@@ -1,11 +1,13 @@
 # Pluo for Channels (Python)
 
-Current version: **1.13**
+Current version: **1.14**
 
 # About
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
 
 # Changes
+ - Version 1.14:
+    - Remove control characters from station API summary string leaving other Unicode characters for tvc-guide-description in playlist
  - Version 1.13:
     - Merged optimizations offered up by **stewartcampbell** (Appreciate the support)
         - Remove EPG data when no longer required

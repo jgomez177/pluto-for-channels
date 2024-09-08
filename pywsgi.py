@@ -1,7 +1,7 @@
 from gevent.pywsgi import WSGIServer
 from flask import Flask, redirect, request, Response, send_file
 from threading import Thread
-import os, sys, importlib, schedule, time, re, uuid
+import os, sys, importlib, schedule, time, re, uuid, unicodedata
 from urllib.parse import urlparse, urlencode, urlunparse, parse_qs
 from datetime import datetime, timedelta
 
@@ -32,6 +32,9 @@ providers = {
     provider: importlib.import_module(provider).Client(),
 }
 
+def remove_non_printable(s):
+    return ''.join([char for char in s if not unicodedata.category(char).startswith('C')])
+
 url = f'<!DOCTYPE html>\
         <html>\
           <head>\
@@ -50,10 +53,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.13</span>\
+                <span class="tag">v1.14</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Sep 1, 2024\
+                Last Updated: Sep 7, 2024\
               '
 
 @app.route("/")
@@ -147,7 +150,7 @@ def playlist(provider, country_code):
         m3u += f" tvg-logo=\"{''.join(map(str, s.get('logo', [])))}\"" if s.get('logo') else ""
         m3u += f" tvg-name=\"{''.join(map(str, s.get('tmsid', [])))}\"" if s.get('tmsid') else ""
         m3u += f" tvc-guide-title=\"{''.join(map(str, s.get('name', [])))}\"" if s.get('name') else ""
-        m3u += f" tvc-guide-description=\"{''.join(map(str, s.get('summary', [])))}\"" if s.get('summary') else ""
+        m3u += f" tvc-guide-description=\"{remove_non_printable(''.join(map(str, s.get('summary', []))))}\"" if s.get('summary') else ""
         m3u += f" tvg-shift=\"{''.join(map(str, s.get('timeShift', [])))}\"" if s.get('timeShift') else ""
         m3u += f",{s.get('name') or s.get('call_sign')}\n"
         m3u += f"{url}\n\n"
