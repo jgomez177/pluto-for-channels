@@ -24,7 +24,7 @@ if pluto_country_list:
 else:
    pluto_country_list = ['local', 'us_east', 'us_west', 'ca', 'uk', 'fr']
 
-ALLOWED_COUNTRY_CODES = ['local', 'us_east', 'us_west', 'ca', 'uk', 'fr']
+ALLOWED_COUNTRY_CODES = ['local', 'us_east', 'us_west', 'ca', 'uk', 'fr', 'all']
 # instance of flask application
 app = Flask(__name__)
 provider = "pluto"
@@ -53,10 +53,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.14</span>\
+                <span class="tag">v1.15</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Sep 7, 2024\
+                Last Updated: Sep 8, 2024\
               '
 
 @app.route("/")
@@ -64,6 +64,18 @@ def index():
     host = request.host
     ul = ""
     if all(item in ALLOWED_COUNTRY_CODES for item in pluto_country_list):
+        pl = f"http://{host}/{provider}/all/playlist.m3u"
+        ul += f"<li>{provider.upper()} ALL channel_id_format = \"{provider}-{{slug}}\" (default format): <a href='{pl}'>{pl}</a></li>\n"
+        pl = f"http://{host}/{provider}/all/playlist.m3u?channel_id_format=id"
+        ul += f"<li>{provider.upper()} ALL channel_id_format = \"{provider}-{{id}}\" (i.mjh.nz compatibility): <a href='{pl}'>{pl}</a></li>\n"
+        pl = f"http://{host}/{provider}/all/playlist.m3u?channel_id_format=slug_only"
+        ul += f"<li>{provider.upper()} ALL channel_id_format = \"{{slug}}\" (maddox compatibility): <a href='{pl}'>{pl}</a></li>\n"
+        ul += f"<br>\n"
+        pl = f"http://{host}/{provider}/epg/all/epg-all.xml"
+        ul += f"<li>{provider.upper()} ALL EPG: <a href='{pl}'>{pl}</a></li>\n"
+        pl = f"http://{host}/{provider}/epg/all/epg-all.xml.gz"
+        ul += f"<li>{provider.upper()} ALL EPG GZ: <a href='{pl}'>{pl}</a></li>\n"
+        ul += f"<br>\n"
         for code in pluto_country_list:
             pl = f"http://{host}/{provider}/{code}/playlist.m3u"
             ul += f"<li>{provider.upper()} {code.upper()} channel_id_format = \"{provider}-{{slug}}\" (default format): <a href='{pl}'>{pl}</a></li>\n"
@@ -106,7 +118,7 @@ def channels(provider, country_code):
 def epg_json(provider, country_code):
         epg, err = providers[provider].epg_json(country_code)
         if err: return err
-        return epg
+        return epg.get(country_code)
 
 @app.get("/<provider>/<country_code>/stitcher.json")
 def stitch_json(provider, country_code):
@@ -116,20 +128,16 @@ def stitch_json(provider, country_code):
 
 @app.get("/<provider>/<country_code>/playlist.m3u")
 def playlist(provider, country_code):
-    if country_code not in ALLOWED_COUNTRY_CODES:
+    if country_code.lower() == 'all':
+        stations, err = providers[provider].channels_all()
+    elif country_code.lower() in ALLOWED_COUNTRY_CODES:
+        stations, err = providers[provider].channels(country_code)
+    else: # country_code not in ALLOWED_COUNTRY_CODES
         return "Invalid county code", 400
 
     host = request.host
-
     channel_id_format = request.args.get('channel_id_format','').lower()
-
-
-    stations, err = providers[provider].channels(country_code)
-    resp = providers[provider].resp_data(country_code)
-    if resp is None:
-        print("resp Error")
-        resp={}
-
+    
     if err is not None:
         return err, 500
     stations = sorted(stations, key = lambda i: i.get('number', 0))
@@ -275,6 +283,10 @@ def epg_scheduler():
             # print("Scheduled EPG Data Update")
             error = providers[provider].create_xml_file(code)
             if error: print(f"{error}")
+        print(f"Initialize XML File for ALL")
+        error = providers[provider].create_xml_file(pluto_country_list)
+        if error: print(f"{error}")
+    
 
 # Schedule the function to run every four hours
 schedule.every(2).hours.do(epg_scheduler)
@@ -292,6 +304,10 @@ if __name__ == '__main__':
             error = providers[provider].create_xml_file(code)
             if error: 
                 print(f"{error}")
+        print(f"Initialize XML File for ALL")
+        error = providers[provider].create_xml_file(pluto_country_list)
+        if error: print(f"{error}")
+
     sys.stdout.write(f"⇨ http server started on [::]:{port}\n")
     try:
         # Start the scheduler thread

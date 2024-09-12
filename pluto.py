@@ -9,8 +9,9 @@ class Client:
         self.response_list = {}
         self.epg_data = {}
         self.device = None
-        self.load_device()
+        self.all_channels = {}
 
+        self.load_device()
         self.x_forward = {"local": {"X-Forwarded-For":""},
                           "uk": {"X-Forwarded-For":"178.238.11.6"},
                           "ca": {"X-Forwarded-For":"192.206.151.131"},
@@ -84,6 +85,9 @@ class Client:
         return self.response_list.get(country_code), None
 
     def channels(self, country_code):
+        if country_code == 'all':
+            return(self.channels_all())
+
         resp, error = self.resp_data(country_code)
         if error: return None, error
 
@@ -139,7 +143,8 @@ class Client:
                     'slug': elem.get('slug'),
                     'tmsid': elem.get('tmsid'),
                     'summary': elem.get('summary'),
-                    'group': categories_list.get(elem.get('id'))}
+                    'group': categories_list.get(elem.get('id')),
+                    'country_code': country_code}
 
             # Ensure number value is unique
             number = elem.get('number')
@@ -155,7 +160,46 @@ class Client:
             stations.append(entry)
 
         sorted_data = sorted(stations, key=lambda x: x["number"])
+        # print(json.dumps(sorted_data[0], indent = 2))
+
+        self.all_channels.update({country_code: sorted_data})
         return(sorted_data, None)
+
+    def channels_all(self):
+        all_channel_list = []
+        for key, val in self.all_channels.items():
+            all_channel_list.extend(val)
+
+        # Using a set to keep track of slugs that have been seen and filter unique ones
+        seen = set()
+        filter_key = 'id'
+        filtered_list = [d for d in all_channel_list if d[filter_key] not in seen and not seen.add(d[filter_key])]
+
+
+        seen = set()
+        for elem in filtered_list:
+            # Ensure number value is unique
+            number = elem.get('number')
+            match elem.get('country_code').lower():
+                case 'ca':
+                    offset = 6000
+                    if number < offset:
+                        number += offset
+                case 'uk':
+                    offset = 7000
+                    if number < offset:
+                        number += offset
+                case 'fr':
+                    offset = 8000
+                    if number < offset:
+                        number += offset
+            while number in seen:
+                number += 1
+            seen.add(number)
+            if number != elem.get('number'):
+                elem.update({'number': number})
+
+        return(filtered_list, None)
 
     #########################################################################################
     # EPG Guide Data
@@ -170,7 +214,7 @@ class Client:
         return clean_xml_string
 
 
-    def update_epg(self, country_code):
+    def update_epg(self, country_code, range_count = 3):
         resp, error = self.resp_data(country_code)
         if error: return None, error
 
@@ -212,7 +256,7 @@ class Client:
         # country_data = self.epg_data.get(country_code, [])
         country_data = []
 
-        for i in range(3):
+        for i in range(range_count):
             if end_time != start_time:
                 start_time = end_time
                 epg_params.update({'start': start_time})
@@ -391,17 +435,57 @@ class Client:
                     category_elem.text = category
         return root
 
+    def get_all_epg_data(self, country_code):
+        all_epg_data = []
+        # print (country_code)
+        channelIds_seen = {}
+        range_count = 3
+
+        for country in country_code:
+            error_code = self.update_epg(country, range_count)
+            if error_code: return error_code
+
+            for epg_list in self.epg_data.get(country):
+                data_list = epg_list.get('data')
+                # Make a copy of the list for iteration to avoid modifying the list while iterating
+                for entry in data_list[:]:
+                    channelId = entry.get('channelId')
+                    if channelId in channelIds_seen:
+                        if channelIds_seen.get(channelId, 0) < range_count:
+                            channelIds_seen.update({channelId: (channelIds_seen.get(channelId, 0) + 1)})
+                            # print(f"[INFO] Adding {country}: {channelId}")
+                        else:
+                            # print(f"[INFO] Beyond {range_count}: Skipping duplicate entry for {country}: {channelId}")
+                            data_list.remove(entry)
+                    else:
+                        channelIds_seen.update({channelId: 1})
+                epg_data_dict = {'data': data_list}
+                all_epg_data.append(epg_data_dict)
+
+            
+        # print(f"[INFO] Length {len(all_epg_data)}")
+        return(all_epg_data)
+
+
     def create_xml_file(self, country_code):
-        error_code = self.update_epg(country_code)
-        if error_code: return error_code
+        if isinstance(country_code, str):
+            error_code = self.update_epg(country_code)
+            if error_code: return error_code
 
-        xml_file_path        = f"epg-{country_code}.xml"
+            station_list, error = self.channels(country_code)
+            if error: return None, error
+
+            xml_file_path = f"epg-{country_code}.xml"
+
+        elif isinstance(country_code, list):
+            xml_file_path = f"epg-all.xml"
+            station_list, error = self.channels_all()
+        else:
+            print("The variable is neither a string nor a list.")
+            return None
+
         compressed_file_path = f"{xml_file_path}.gz"
-
         root = ET.Element("tv", attrib={"generator-info-name": "jgomez177", "generated-ts": ""})
-
-        station_list, error = self.channels(country_code)
-        if error: return None, error
 
         # Create Channel Elements from list of Stations
         for station in station_list:
@@ -411,9 +495,19 @@ class Client:
             icon = ET.SubElement(channel, "icon", attrib={"src": station["logo"]})
 
         # Create Programme Elements
-        program_data =  self.epg_data.get(country_code, [])
+        if isinstance(country_code, str):
+            program_data =  self.epg_data.get(country_code, [])
+        else:
+            # Write program_data for all countries
+            program_data = self.get_all_epg_data(country_code)
+            #print(len(program_data))
+            #for elem in program_data:
+            #    print(len(elem.get("data")))
+            #program_data = []
+        # print(f"Program data: {len(program_data)}")
         for elem in program_data:
             root = self.read_epg_data(elem, root)
+
 
         # Create an ElementTree object
         tree = ET.ElementTree(root)
@@ -435,8 +529,6 @@ class Client:
             with gzip.open(compressed_file_path, 'wb') as compressed_file:
                 compressed_file.writelines(file)
 
-        # Clear the EPG data for this country
-        if country_code in self.epg_data:
-            del self.epg_data[country_code]
-
+        # Clear the EPG data after writing full XML File
+        self.epg_data = {}
         return None
