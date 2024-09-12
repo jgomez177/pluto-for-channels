@@ -56,7 +56,7 @@ url = f'<!DOCTYPE html>\
                 <span class="tag">v1.15</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Sep 8, 2024\
+                Last Updated: Sep 12, 2024\
               '
 
 @app.route("/")
