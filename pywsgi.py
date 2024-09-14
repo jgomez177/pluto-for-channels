@@ -53,10 +53,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.15</span>\
+                <span class="tag">v1.16</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Sep 12, 2024\
+                Last Updated: Sep 14, 2024\
               '
 
 @app.route("/")
@@ -183,7 +183,7 @@ def watch(provider, country_code, id):
     stitcher = "https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv"
     base_path = f"/stitch/hls/channel/{id}/master.m3u8"
 
-    jwt_required_list = ['625f054c5dfea70007244612', '625f04253e5f6c000708f3b7']
+    jwt_required_list = ['625f054c5dfea70007244612', '625f04253e5f6c000708f3b7', '5421f71da6af422839419cb3']
     
 
     params = {'advertisingId': '',
@@ -231,7 +231,7 @@ def watch(provider, country_code, id):
         video_url = urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path,
                                parsed_url.params, updated_query, parsed_url.fragment))
 
-    # print(video_url)
+    print(video_url)
     return (redirect(video_url))
 
 

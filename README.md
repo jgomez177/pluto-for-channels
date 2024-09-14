@@ -1,11 +1,13 @@
 # Pluo for Channels (Python)
 
-Current version: **1.15**
+Current version: **1.16**
 
 # About
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
 
 # Changes
+ - Version 1.16:
+    - Added Fix for CNN Headlines.
  - Version 1.15:
     - Adding ALL option that displays a single playlist/EPG for all selected countries in the container.
  - Version 1.14:
