@@ -391,7 +391,13 @@ class Client:
                 title = ET.SubElement(programme, "title")
                 title.text = self.strip_illegal_characters(timeline["title"])
                 if timeline["episode"].get("series", {}).get("type", "") == "live":
-                    live = ET.SubElement(programme, "live")
+                    if timeline["episode"]["clip"]["originalReleaseDate"] == timeline["start"]:
+                        live = ET.SubElement(programme, "live")
+                    if timeline["episode"].get("season", None):
+                        episode_num_onscreen = ET.SubElement(programme, "episode-num", attrib={"system": "onscreen"})
+                        episode_num_onscreen.text = f'S{timeline["episode"]["season"]:02d}E{timeline["episode"]["number"]:02d}'
+                        episode_num_pluto = ET.SubElement(programme, "episode-num", attrib={"system": "pluto"})
+                        episode_num_pluto.text = timeline["episode"]["_id"]
                 elif timeline["episode"].get("series", {}).get("type", "") == "tv":
                     episode_num_onscreen = ET.SubElement(programme, "episode-num", attrib={"system": "onscreen"})
                     episode_num_onscreen.text = f'S{timeline["episode"]["season"]:02d}E{timeline["episode"]["number"]:02d}'
