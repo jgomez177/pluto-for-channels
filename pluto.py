@@ -68,8 +68,8 @@ class Client:
 
         try:
             response = self.session.get('https://boot.pluto.tv/v4/start', headers=boot_headers, params=boot_params)
-        except requests.ConnectionError as e:
-            return None, f"Connection Error. {str(e)}"
+        except Exception as e:
+            return None, (f"Error Exception type: {type(e).__name__}")
 
         if (200 <= response.status_code <= 201):
             resp = response.json()
@@ -115,7 +115,11 @@ class Client:
         if country_code in self.x_forward.keys():
             headers.update(self.x_forward.get(country_code))
 
-        response = self.session.get(url, params=params, headers=headers)
+        try:
+            response = self.session.get(url, params=params, headers=headers)
+        except Exception as e:
+            return None, (f"Error Exception type: {type(e).__name__}")
+
         if response.status_code != 200:
             return None, f"HTTP failure {response.status_code}: {response.text}"
 
@@ -123,7 +127,11 @@ class Client:
 
         category_url = f"https://service-channels.clusters.pluto.tv/v2/guide/categories"
 
-        response = self.session.get(category_url, params=params, headers=headers)
+        try:
+            response = self.session.get(category_url, params=params, headers=headers)
+        except Exception as e:
+            return None, (f"Error Exception type: {type(e).__name__}")
+        
         if response.status_code != 200:
             return None, f"HTTP failure {response.status_code}: {response.text}"
 
@@ -264,7 +272,11 @@ class Client:
 
             for group in grouped_id_values:
                 epg_params.update({"channelIds": ','.join(map(str, group))})
-                response = self.session.get(url, params=epg_params, headers=epg_headers)
+                try:
+                    response = self.session.get(url, params=epg_params, headers=epg_headers)
+                except Exception as e:
+                    return None, (f"Error Exception type: {type(e).__name__}")
+                
                 if response.status_code != 200:
                     return None, f"HTTP failure {response.status_code}: {response.text}"
                 country_data.append(response.json())

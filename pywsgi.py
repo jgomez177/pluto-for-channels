@@ -53,10 +53,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.17</span>\
+                <span class="tag">v1.18</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Sep 20, 2024\
+                Last Updated: Nov. 7, 2024\
               '
 
 @app.route("/")
