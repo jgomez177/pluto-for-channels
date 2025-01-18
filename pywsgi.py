@@ -9,14 +9,16 @@ from datetime import datetime, timedelta
 from gevent import monkey
 monkey.patch_all()
 
-port = os.environ.get("PLUTO_PORT")
-if port is None:
+
+version = "1.20"
+updated_date = "Jan. 18, 2025"
+
+# Retrieve the port number from env variables
+# Fallback to default if invalid or unspecified
+try:
+    port = int(os.environ.get("PLUTO_PORT", 7777))
+except:
     port = 7777
-else:
-    try:
-        port = int(port)
-    except:
-        port = 7777
 
 pluto_country_list = os.environ.get("PLUTO_CODE")
 if pluto_country_list:
@@ -53,10 +55,10 @@ url = f'<!DOCTYPE html>\
             <div class="container">\
               <h1 class="title">\
                 {provider.capitalize()} Playlist\
-                <span class="tag">v1.18</span>\
+                <span class="tag">v{version}</span>\
               </h1>\
               <p class="subtitle">\
-                Last Updated: Nov. 7, 2024\
+                Last Updated: {updated_date}\
               '
 
 @app.route("/")
@@ -161,7 +163,7 @@ def playlist(provider, country_code):
         m3u += f" tvc-guide-description=\"{remove_non_printable(''.join(map(str, s.get('summary', []))))}\"" if s.get('summary') else ""
         m3u += f" tvg-shift=\"{''.join(map(str, s.get('timeShift', [])))}\"" if s.get('timeShift') else ""
         m3u += f",{s.get('name') or s.get('call_sign')}\n"
-        m3u += f"{url}\n\n"
+        m3u += f"{url}\n"
 
     response = Response(m3u, content_type='audio/x-mpegurl')
     return (response)
@@ -185,7 +187,6 @@ def watch(provider, country_code, id):
 
     jwt_required_list = ['625f054c5dfea70007244612', '625f04253e5f6c000708f3b7', '5421f71da6af422839419cb3']
     
-
     params = {'advertisingId': '',
               'appName': 'web',
               'appVersion': 'unknown',
@@ -234,7 +235,6 @@ def watch(provider, country_code, id):
     print(video_url)
     return (redirect(video_url))
 
-
 @app.get("/<provider>/epg/<country_code>/<filename>")
 def epg_xml(provider, country_code, filename):
 
@@ -275,45 +275,56 @@ def epg_xml(provider, country_code, filename):
         # Handle other unexpected errors
         return f"An error occurred: {str(e)}", 500
 
-
 # Define the function you want to execute every four hours
 def epg_scheduler():
+    print("[INFO] Running EPG Scheduler")
     if all(item in ALLOWED_COUNTRY_CODES for item in pluto_country_list):
         for code in pluto_country_list:
-            # print("Scheduled EPG Data Update")
             error = providers[provider].create_xml_file(code)
             if error: print(f"{error}")
-        print(f"Initialize XML File for ALL")
         error = providers[provider].create_xml_file(pluto_country_list)
         if error: print(f"{error}")
-    
+    print("[INFO] EPG Scheduler Complete")
 
-# Schedule the function to run every four hours
+# Schedule the function to run every two hours
 schedule.every(2).hours.do(epg_scheduler)
 
 # Define a function to run the scheduler in a separate thread
 def scheduler_thread():
+    # Run the task immediately when the thread starts
+    try:
+        epg_scheduler()
+    except Exception as e:
+        print(f"Error running initial task: {e}")
+
+    # Continue as Scheduled
     while True:
-        schedule.run_pending()
-        time.sleep(1)
+        try:
+            schedule.run_pending()
+            time.sleep(1)
+        except Exception as e:
+             print(f"[ERROR] Error in scheduler thread: {e}")
+
+# Function to monitor and restart the thread if needed
+def monitor_thread(thread_func):
+    thread = Thread(target=thread_func, daemon=True)
+    print("[INFO] Initializing Scheduler")
+    thread.start()
+
+    while True:
+        if not thread.is_alive():
+            print("[ERROR] Scheduler Thread Stopped. Restarting...")
+            thread.start()
+        time.sleep(15 * 60)  # Check every 15 minutes
+        print("[INFO] Checking Scheduler Thread")
 
 if __name__ == '__main__':
-    if all(item in ALLOWED_COUNTRY_CODES for item in pluto_country_list):
-        for code in pluto_country_list:
-            print(f"Initialize XML File for {code}")
-            error = providers[provider].create_xml_file(code)
-            if error: 
-                print(f"{error}")
-        print(f"Initialize XML File for ALL")
-        error = providers[provider].create_xml_file(pluto_country_list)
-        if error: print(f"{error}")
-
-    sys.stdout.write(f"⇨ http server started on [::]:{port}\n")
     try:
-        # Start the scheduler thread
-        thread = Thread(target=scheduler_thread)
-        thread.start()
+        # Start a monitoring thread
+        Thread(target=monitor_thread, args=(scheduler_thread,), daemon=True).start()
 
+        print(f"⇨ http server started on [::]:{port}")
         WSGIServer(('', port), app, log=None).serve_forever()
+
     except OSError as e:
         print(str(e))

@@ -6,6 +6,8 @@ Current version: **1.17**
 This takes Pluto Live TV Channels and generates an M3U playlist and EPG XMLTV file.
 
 # Changes
+ - Version 1.20:
+    - additional error handling and thread monitoring.
  - Version 1.18:
     - Added additional error handling.
  - Version 1.17:
