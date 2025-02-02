@@ -1,4 +1,4 @@
-# Pluo for Channels (Python)
+# Pluto for Channels
 
 Current version: **1.17**
 
